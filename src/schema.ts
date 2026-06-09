@@ -13,6 +13,7 @@ create table public.users (
   balance numeric default 0,
   is_admin boolean default false,
   is_bot boolean default false,
+  approved_for_leaderboard boolean default true,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
@@ -49,7 +50,9 @@ create table public.transactions (
   user_id uuid references public.users(id),
   type text not null,
   amount numeric not null,
-  date bigint not null
+  date bigint not null,
+  source_user_id uuid references public.users(id),
+  battle_id uuid references public.battles(id)
 );
 
 -- Table: challenges

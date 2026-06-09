@@ -204,7 +204,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const mapUser = (u: any) => ({ ...u, uniqueId: u.unique_id, is_bot: u.unique_id?.startsWith('bot_') || !!u.is_bot });
   const mapBattle = (b: any) => ({ ...b, player1Id: b.player1_id, player2Id: b.player2_id, player1Votes: b.player1_votes, player2Votes: b.player2_votes, createdAt: b.created_at, durationMs: b.duration_ms, winnerId: b.winner_id, notified: b.notified });
   const mapChallenge = (c: any) => ({ ...c, senderId: c.sender_id, receiverId: c.receiver_id, createdAt: c.created_at, durationMs: c.duration_ms });
-  const mapTransaction = (t: any) => ({ ...t, userId: t.user_id });
+  const mapTransaction = (t: any) => ({ ...t, userId: t.user_id, sourceUserId: t.source_user_id, battleId: t.battle_id });
   const mapDeposit = (d: any) => ({ ...d, userId: d.user_id, receiptUrl: d.receipt_url, transactionId: d.transaction_id });
   const mapPendingReq = (p: any) => ({ ...p, userId: p.user_id, easypaisaNumber: p.easypaisa_number });
   const mapNotification = (n: any) => ({ ...n, userId: n.user_id, createdAt: n.created_at });
@@ -358,7 +358,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (admin) {
          updates.push(supabase.rpc('increment_balance', { row_id: admin.id, amount: adminCommission }));
-         updates.push(supabase.from('transactions').insert({ type: 'PLATFORM_FEE', amount: adminCommission, user_id: admin.id, date: Date.now() }));
+         updates.push(supabase.from('transactions').insert({ type: 'PLATFORM_FEE', amount: adminCommission, user_id: admin.id, date: Date.now(), source_user_id: battle.player1Id || null, battle_id: battle.id }));
       }
       
       const { data: stats } = await supabase.from('stats').select('total_commission, active_battles').eq('id', 'global').single();
@@ -388,7 +388,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (admin) {
          updates.push(supabase.rpc('increment_balance', { row_id: admin.id, amount: adminCommission }));
-         updates.push(supabase.from('transactions').insert({ type: 'PLATFORM_FEE', amount: adminCommission, user_id: admin.id, date: Date.now() }));
+         updates.push(supabase.from('transactions').insert({ type: 'PLATFORM_FEE', amount: adminCommission, user_id: admin.id, date: Date.now(), source_user_id: winnerId, battle_id: battle.id }));
       }
       
       // Update stats
@@ -857,7 +857,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (eErr) throw eErr;
       if (existing) {
-         throw new Error("A pending challenge already exists between you.");
+         // Auto-delete the old pending challenge so the new challenge can replace/repropose it cleanly
+         const { error: delErr } = await supabase.from('challenges').delete().eq('id', existing.id);
+         if (delErr) throw delErr;
       }
 
       const { error: insErr } = await supabase.from('challenges').insert({
@@ -895,9 +897,20 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         created_at: Date.now()
       })
     ]);
+    await notifyAdmins(`@${currentUser.username} submitted a deposit of ${amount} VTX (TID: ${transactionId}) with receipt for approval.`, 'DEPOSIT_PENDING');
   };
 
   const adminAction = async (type: string, payload: any) => {
+      if (!currentUser?.is_admin) return;
+      if (type === 'TOGGLE_LEADERBOARD_APPROVAL') {
+          const userToToggle = state.users.find(u => u.id === payload.userId);
+          if (!userToToggle) throw new Error("User not found.");
+          const newValue = userToToggle.approved_for_leaderboard === false ? true : false;
+          const { error } = await supabase.from('users').update({ approved_for_leaderboard: newValue }).eq('id', userToToggle.id);
+          if (error) throw error;
+          toast.success(`Leaderboard approval toggled!`);
+          return;
+      }
      if (!currentUser?.is_admin) return;
 
      try {
@@ -1065,6 +1078,26 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
      }
   };
 
+  const notifyAdmins = async (message: string, type: string) => {
+    try {
+      const { data: admins, error } = await supabase.from('users').select('id').eq('is_admin', true);
+      if (error) throw error;
+      if (admins && admins.length > 0) {
+        const inserts = admins.map(admin => 
+          supabase.from('notifications').insert({
+            user_id: admin.id,
+            message: message,
+            type: type,
+            created_at: Date.now()
+          })
+        );
+        await Promise.all(inserts);
+      }
+    } catch (err) {
+      console.error("Failed to notify admins of system event:", err);
+    }
+  };
+
   const userRequest = async (type: string, payload: any) => {
     if (!currentUser) return;
     
@@ -1119,6 +1152,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 date: Date.now()
             });
             if (error) throw error;
+            await notifyAdmins(`@${currentUser.username} submitted a support ticket: "${payload.message}"`, 'SUPPORT_TICKET');
             toast.success("Support ticket submitted successfully.");
             return;
         }
@@ -1137,6 +1171,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
             for (const res of results) {
                if (res.error) throw res.error;
             }
+            await notifyAdmins(`@${currentUser.username} submitted a deposit of ${payload.amount} VTX (TID: ${payload.transactionId}) for approval.`, 'DEPOSIT_PENDING');
             toast.success("Deposit TID submitted successfully.");
             return;
         }
@@ -1150,6 +1185,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
             for (const res of results) {
                if (res.error) throw res.error;
             }
+            await notifyAdmins(`@${currentUser.username} requested a local deposit of ${payload.amount} VTX.`, 'DEPOSIT_PENDING');
             toast.success("Deposit requested successfully!");
         } else if (type === 'REQUEST_WITHDRAWAL') {
             // Fetch fresh user balance from database
@@ -1179,6 +1215,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
             for (const res of results) {
                if (res.error) throw res.error;
             }
+            await notifyAdmins(`@${currentUser.username} requested a withdrawal of ${payload.amount} VTX (${payload.easypaisaNumber}).`, 'WITHDRAWAL_PENDING');
             
             const { data: updatedUser } = await supabase.from('users').select('*').eq('id', currentUser.id).single();
             if (updatedUser) setCurrentUser(mapUser(updatedUser));

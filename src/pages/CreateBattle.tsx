@@ -142,6 +142,9 @@ export default function CreateBattle() {
             </button>
           ))}
         </div>
+        <p className="text-[10px] text-gray-500 font-medium leading-relaxed mt-1.5">
+          20% Commission (Includes API, Server Hosting, and System Maintenance Costs)
+        </p>
       </div>
 
       <div className="space-y-3">

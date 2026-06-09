@@ -14,6 +14,7 @@ export default function Profile({ isAdmin }: ProfileProps) {
   
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
+  const [withdrawAmount, setWithdrawAmount] = useState('');
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   
@@ -498,7 +499,10 @@ export default function Profile({ isAdmin }: ProfileProps) {
               <div className="flex items-center justify-between p-4 border-b border-gray-800/50 relative">
                  <h2 className="text-white font-bold text-lg w-full text-center">Withdraw Funds</h2>
                  <button 
-                   onClick={() => setIsWithdrawModalOpen(false)}
+                   onClick={() => {
+                      setIsWithdrawModalOpen(false);
+                      setWithdrawAmount('');
+                   }}
                    className="absolute right-4 w-7 h-7 bg-gray-800/50 hover:bg-gray-700 text-gray-400 rounded-full flex items-center justify-center transition-colors"
                  >
                    <X className="w-4 h-4" />
@@ -522,10 +526,14 @@ export default function Profile({ isAdmin }: ProfileProps) {
                       
                       setIsSubmitting(true);
                       try {
+                         if (amount > (currentUser?.balance || 0)) {
+                            throw new Error('Insufficient balance.');
+                         }
                          await userRequest('REQUEST_WITHDRAWAL', { amount, easypaisaNumber: `[${method}] ${account}` });
                          (e.target as HTMLFormElement).reset();
                          setIsWithdrawModalOpen(false);
-                         toast.success('Withdrawal request submitted successfully!');
+                         setWithdrawAmount('');
+                          toast.success('Withdrawal request submitted successfully!');
                       } catch (err: any) {
                          toast.error(err.message);
                       } finally {
@@ -551,10 +559,18 @@ export default function Profile({ isAdmin }: ProfileProps) {
                           name="amount"
                           type="number"
                           placeholder="e.g., 500"
+                           value={withdrawAmount}
+                           onChange={(e) => setWithdrawAmount(e.target.value)}
                           required
-                          className="w-full bg-[#1A1F2E] border border-gray-800 rounded-xl px-4 py-3 text-white font-bold focus:outline-none focus:border-[#F43F5E] transition-colors"
+                          className={`w-full bg-[#1A1F2E] border ${Number(withdrawAmount) > (currentUser?.balance || 0) ? 'border-red-500/80 focus:border-red-500' : 'border-gray-800 focus:border-[#F43F5E]'} rounded-xl px-4 py-3 text-white font-bold focus:outline-none transition-colors`}
                        />
                     </div>
+                        {Number(withdrawAmount) > (currentUser?.balance || 0) && (
+                           <div className="text-red-500 text-xs font-bold mt-1.5 flex items-center gap-1 animate-in fade-in slide-in-from-top-1">
+                              <ShieldAlert className="w-3.5 h-3.5" />
+                              <span>Insufficient balance.</span>
+                           </div>
+                        )}
                     <div>
                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">Account No. / IBAN / Wallet Details</label>
                        <input 
@@ -566,12 +582,11 @@ export default function Profile({ isAdmin }: ProfileProps) {
                        />
                     </div>
                     <button 
-                      type="submit"
-                      disabled={isSubmitting}
+                      type="submit" disabled={isSubmitting || Number(withdrawAmount) > (currentUser?.balance || 0)}
                       className="w-full bg-[#F43F5E] hover:bg-[#E11D48] disabled:opacity-50 disabled:cursor-not-allowed text-white font-extrabold py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-transform shadow-[0_0_15px_rgba(244,63,94,0.2)] mt-2 active:scale-95"
                     >
                       <ArrowDownToLine className="w-5 h-5 rotate-180" />
-                      {isSubmitting ? 'Processing...' : 'Submit Withdraw Request'}
+                      {isSubmitting ? 'Processing...' : Number(withdrawAmount) > (currentUser?.balance || 0) ? 'Insufficient balance.' : 'Submit Withdraw Request'}
                     </button>
                  </form>
               </div>

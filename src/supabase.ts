@@ -580,6 +580,34 @@ class MockSupabaseClient {
       }
       return { error: null };
     }
+    
+    if (func === 'increment_player1_votes' || func === 'increment_player2_votes') {
+      const { row_id } = params;
+      const battlesKey = 'mock_sb_battles';
+      let battles: any[] = [];
+      try {
+        const stored = localStorage.getItem(battlesKey);
+        battles = stored ? JSON.parse(stored) : getInitialSeedData('battles');
+      } catch {
+        battles = getInitialSeedData('battles');
+      }
+
+      let updated = false;
+      battles = battles.map(b => {
+        if (b.id === row_id) {
+          updated = true;
+          const voteField = func === 'increment_player1_votes' ? 'player1_votes' : 'player2_votes';
+          return { ...b, [voteField]: (b[voteField] || 0) + 1 };
+        }
+        return b;
+      });
+
+      if (updated) {
+        localStorage.setItem(battlesKey, JSON.stringify(battles));
+        triggerRealtime();
+      }
+      return { error: null };
+    }
     return { error: null };
   }
 }

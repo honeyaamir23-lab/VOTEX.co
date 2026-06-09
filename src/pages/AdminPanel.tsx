@@ -143,19 +143,30 @@ export default function AdminPanel() {
                      <h3 className="font-bold text-white mb-4 border-b border-gray-800 pb-2">Recent Transactions</h3>
                      <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
                         {state?.transactions?.slice(0, 10).map((t, i) => {
-                           const u = state.users.find(user => user.id === t.userId);
-                           return (
-                             <div key={i} className="flex justify-between items-center bg-[#0A0D14] p-3 rounded-xl border border-gray-800/50">
-                                <div>
-                                   <div className="text-xs font-bold text-gray-300">{t.type}</div>
-                                   <div className="text-[10px] text-gray-500">@{u?.username || 'Unknown'} - {new Date(t.date).toLocaleTimeString()}</div>
-                                </div>
-                                <div className={`text-sm font-mono font-bold ${t.amount > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                                   {t.amount > 0 ? '+' : ''}{t.amount} VTX
-                                </div>
-                             </div>
-                           )
-                        })}
+                            const u = state.users.find(user => user.id === t.userId);
+                            const sourceUser = t.sourceUserId ? state.users.find(user => user.id === t.sourceUserId) : null;
+                            return (
+                              <div key={i} className="flex flex-col gap-2 bg-[#0A0D14] p-3 rounded-xl border border-gray-800/50">
+                                 <div className="flex justify-between items-center">
+                                    <div>
+                                       <div className="text-xs font-bold text-gray-300">
+                                          {t.type === 'PLATFORM_FEE' ? '🏆 PLATFORM COMMISSION (20%)' : t.type}
+                                       </div>
+                                       <div className="text-[10px] text-gray-500">@{u?.username || 'Admin'} - {new Date(t.date).toLocaleTimeString()}</div>
+                                    </div>
+                                    <div className={`text-sm font-mono font-bold ${t.amount > 0 ? 'text-[#10B981]' : 'text-red-400'}`}>
+                                       {t.amount > 0 ? '+' : ''}{t.amount} VTX
+                                    </div>
+                                 </div>
+                                 {t.type === 'PLATFORM_FEE' && (
+                                    <div className="text-[9px] bg-yellow-500/10 text-yellow-400/90 border border-yellow-500/20 p-2 rounded-lg font-mono flex flex-col gap-0.5">
+                                       <div><span className="text-gray-400">Source User ID:</span> {t.sourceUserId || 'N/A'} {sourceUser ? `(@${sourceUser.username})` : ''}</div>
+                                       <div><span className="text-gray-400">Battle ID:</span> {t.battleId || 'N/A'}</div>
+                                    </div>
+                                 )}
+                              </div>
+                            )
+                         })}
                      </div>
                   </div>
 
@@ -174,8 +185,20 @@ export default function AdminPanel() {
                                      <div className="font-mono text-[10px] text-gray-500">ID: {u.uniqueId}</div>
                                   </div>
                                </div>
-                               <div className="text-[10px] text-gray-400">
-                                 {new Date(u.createdAt || Date.now()).toLocaleDateString()}
+                               <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => adminAction('TOGGLE_LEADERBOARD_APPROVAL', { userId: u.id })}
+                                    className={`px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all border ${
+                                      u.approved_for_leaderboard !== false 
+                                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20' 
+                                        : 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20'
+                                    }`}
+                                  >
+                                    {u.approved_for_leaderboard !== false ? 'Approved' : 'Hidden'}
+                                  </button>
+                                  <div className="text-[10px] text-gray-400">
+                                    {new Date(u.createdAt || Date.now()).toLocaleDateString()}
+                                  </div>
                                </div>
                            </div>
                         ))}
@@ -437,6 +460,16 @@ export default function AdminPanel() {
                                    className="bg-yellow-500/20 text-yellow-500 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-yellow-500/30 transition-colors"
                                 >
                                    Adjust Balance
+                                </button>
+                                <button
+                                   onClick={() => adminAction('TOGGLE_LEADERBOARD_APPROVAL', { userId: user.id })}
+                                   className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all border mt-2 block w-full ${
+                                     user.approved_for_leaderboard !== false 
+                                       ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20' 
+                                       : 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20'
+                                   }`}
+                                >
+                                   Leaderboard: {user.approved_for_leaderboard !== false ? 'Approved' : 'Hidden'}
                                 </button>
                              </div>
                           </div>
