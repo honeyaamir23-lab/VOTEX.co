@@ -1,0 +1,6 @@
+{
+  "name": "Votex",
+  "description": "A real-time competitive voting and staking platform where users battle and win PKR.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
