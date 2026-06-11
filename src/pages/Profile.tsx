@@ -520,7 +520,16 @@ export default function Profile({ isAdmin }: ProfileProps) {
                       const method = formData.get('method') as string;
                       const account = formData.get('account') as string;
                       
-                      if (!amount || amount <= 0 || !account) {
+                       const minLimit = state.platformStats?.minWithdrawal || 500;
+                       if (amount < minLimit) {
+                          toast.error(`Sorry! You cannot withdraw less than the minimum limit of ${minLimit} coins.`);
+                          return;
+                       }
+                       if (amount > (currentUser?.balance || 0)) {
+                          toast.error("Sorry! You do not have enough coins in your balance.");
+                          return;
+                       }
+                       if (!amount || amount <= 0 || !account) {
                          return toast.error('Please enter valid details.');
                       }
                       

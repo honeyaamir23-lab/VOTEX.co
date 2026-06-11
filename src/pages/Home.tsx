@@ -1,4 +1,4 @@
-import { Plus, Zap, Clock, TrendingUp, Search, Swords, Check, X, Trophy, LifeBuoy, Share2, Sliders } from 'lucide-react';
+import { Plus, Zap, Clock, TrendingUp, Search, Swords, Check, X, Trophy, LifeBuoy, Share2, Sliders, Info } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import React, { useState, useEffect, useRef } from 'react';
 import { useGame } from '../context/GameContext';
@@ -128,7 +128,10 @@ export default function Home() {
   };
 
   const handleVote = (battleId: string, playerId: string) => {
-    if (!currentUser) return;
+    if (!currentUser) {
+       toast.error("Please log in to cast your vote!");
+       return;
+    }
     
     // Admin direct bypass: unlimited free voting with instantaneous feedback
     if (currentUser.is_admin) {
@@ -580,6 +583,14 @@ export default function Home() {
                    >
                    </div>
                  </div>
+              </div>
+
+              {/* Tax Banner */}
+              <div className="relative z-10 mt-4 pt-3 border-t border-gray-800/60 text-center">
+                 <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#1A1F2E]/45 border border-gray-800/60 rounded-full text-[11px] font-semibold tracking-wider text-gray-400">
+                    <Info className="w-3.5 h-3.5 text-[#F43F5E] shrink-0" />
+                    20% tax API & fixed cost
+                 </span>
               </div>
             </div>
           )})}

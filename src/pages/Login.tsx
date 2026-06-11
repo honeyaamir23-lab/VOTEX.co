@@ -209,6 +209,33 @@ export default function Login({ onLogin }: LoginProps) {
             )}
           </div>
         </div>
+
+        {/* Partnership Marquee */}
+        <div className="w-full max-w-sm overflow-hidden mt-8 border-t border-b border-gray-800/40 py-3 relative bg-[#0A0D14]/30">
+          <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-[#0A0D14] to-transparent z-10 pointer-events-none"></div>
+          <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-[#0A0D14] to-transparent z-10 pointer-events-none"></div>
+          
+          <div className="flex whitespace-nowrap animate-marquee">
+            <div className="flex shrink-0 items-center gap-6 pr-6 text-[11px] text-gray-400 font-medium tracking-wide">
+              <span>In Partnership With: Netlify</span>
+              <span className="text-gray-600">•</span>
+              <span>Median.co</span>
+              <span className="text-gray-600">•</span>
+              <span>TikTok Lite</span>
+              <span className="text-gray-600">•</span>
+              <span>Supabase</span>
+            </div>
+            <div className="flex shrink-0 items-center gap-6 pr-6 text-[11px] text-gray-400 font-medium tracking-wide" aria-hidden="true">
+              <span>In Partnership With: Netlify</span>
+              <span className="text-gray-600">•</span>
+              <span>Median.co</span>
+              <span className="text-gray-600">•</span>
+              <span>TikTok Lite</span>
+              <span className="text-gray-600">•</span>
+              <span>Supabase</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

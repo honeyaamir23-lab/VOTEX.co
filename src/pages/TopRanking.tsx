@@ -3,7 +3,13 @@ import { useGame } from '../context/GameContext';
 
 export default function TopRanking() {
   const { state } = useGame();
-  const users = [...(state?.users || [])].filter(u => u.approved_for_leaderboard !== false && !u.is_admin && !u.is_bot).sort((a, b) => b.balance - a.balance);
+  const users = [...(state?.users || [])].filter(u => {
+    if (u.is_admin) return false;
+    if (u.is_bot) {
+      return u.approved_for_leaderboard === true;
+    }
+    return u.approved_for_leaderboard !== false;
+  }).sort((a, b) => b.balance - a.balance);
 
   return (
     <div className="p-4 space-y-6">

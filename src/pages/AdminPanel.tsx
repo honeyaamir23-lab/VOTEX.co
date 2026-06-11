@@ -439,45 +439,77 @@ export default function AdminPanel() {
                         className="w-full bg-[#1A1F2E] border border-gray-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#10B981] transition-colors"
                      />
                  </div>
-                 <div className="bg-[#131823] p-5 rounded-xl border border-gray-800 shadow-lg">
-                    <h3 className="text-white font-bold mb-4 shadow-sm border-b border-gray-800 pb-2">User Management</h3>
-                    <div className="space-y-3">
-                       {state?.users?.filter(u => !u.is_bot && (u.username.toLowerCase().includes(searchQuery.toLowerCase()) || u.uniqueId.includes(searchQuery))).map(user => (
-                          <div key={user.id} className="bg-[#0A0D14] border border-gray-800/50 rounded-xl p-4 flex items-center justify-between">
-                             <div>
-                                <p className="font-bold text-sm text-white">@{user.username} <span className="text-gray-400 text-xs ml-1">(ID: {user.uniqueId})</span></p>
-                                <p className="text-xs text-gray-500 mb-1">Joined: {new Date(user.createdAt || Date.now()).toLocaleDateString()}</p>
-                                <p className="text-sm font-mono text-[#10B981]">{user.balance.toLocaleString()} VTX</p>
-                             </div>
-                             <div className="flex flex-col gap-2">
-                                <button
-                                   onClick={() => {
-                                      const amountStr = prompt(`Adjust balance for @${user.username} (Use negative for deduction):`);
-                                      if (amountStr && !isNaN(Number(amountStr))) {
-                                         adminAction('ADMIN_ADJUST_BALANCE', { userId: user.id, amount: Number(amountStr) });
-                                      }
-                                   }}
-                                   className="bg-yellow-500/20 text-yellow-500 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-yellow-500/30 transition-colors"
-                                >
-                                   Adjust Balance
-                                </button>
-                                <button
-                                   onClick={() => adminAction('TOGGLE_LEADERBOARD_APPROVAL', { userId: user.id })}
-                                   className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all border mt-2 block w-full ${
-                                     user.approved_for_leaderboard !== false 
-                                       ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20' 
-                                       : 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20'
-                                   }`}
-                                >
-                                   Leaderboard: {user.approved_for_leaderboard !== false ? 'Approved' : 'Hidden'}
-                                </button>
-                             </div>
-                          </div>
-                       ))}
-                       {state?.users?.filter(u => !u.is_bot && (u.username.toLowerCase().includes(searchQuery.toLowerCase()) || u.uniqueId.includes(searchQuery))).length === 0 && (
-                          <p className="text-gray-500 text-sm text-center py-4">No real users found matching "{searchQuery}".</p>
-                       )}
+                 <div className="bg-[#131823] p-6 rounded-2xl border border-gray-800 shadow-xl">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-800 pb-4 mb-4">
+                       <h3 className="text-white font-bold text-lg">User Statistics & Management</h3>
+                       <div className="text-xs text-gray-400 font-mono bg-[#0A0D14]/80 px-3 py-1.5 rounded-lg border border-gray-800/80">
+                          Total Users: {state?.users?.filter(u => !u.is_bot).length || 0}
+                       </div>
                     </div>
+                    
+                    <div className="overflow-x-auto custom-scrollbar">
+                       <table className="w-full text-left border-collapse min-w-[600px]">
+                          <thead>
+                             <tr className="border-b border-gray-800 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                                <th className="py-3 px-4">User Name / ID</th>
+                                <th className="py-3 px-4 text-center">Total Coins / Balance</th>
+                                <th className="py-3 px-4 text-center">Total Matches Played</th>
+                                <th className="py-3 px-4 text-right">Actions</th>
+                             </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-800/40">
+                             {state?.users?.filter(u => !u.is_bot && (u.username.toLowerCase().includes(searchQuery.toLowerCase()) || u.uniqueId.includes(searchQuery))).map(user => {
+                                const totalMatches = state?.battles?.filter(b => b.player1Id === user.id || b.player2Id === user.id).length || 0;
+                                return (
+                                   <tr key={user.id} className="hover:bg-[#1A1F2E]/25 transition-colors">
+                                      <td className="py-3.5 px-4">
+                                         <div className="flex flex-col">
+                                            <span className="font-extrabold text-sm text-white">@{user.username}</span>
+                                            <span className="text-[10px] text-gray-500 font-mono mt-0.5">ID: {user.uniqueId}</span>
+                                         </div>
+                                      </td>
+                                      <td className="py-3.5 px-4 text-center font-mono">
+                                         <span className="text-sm font-black text-[#10B981]">{user.balance.toLocaleString()} VTX</span>
+                                      </td>
+                                      <td className="py-3.5 px-4 text-center">
+                                         <div className="inline-flex items-center justify-center bg-blue-500/10 text-blue-400 text-xs font-bold px-2.5 py-1 rounded-full border border-blue-500/10">
+                                            {totalMatches} Matches
+                                         </div>
+                                      </td>
+                                      <td className="py-3.5 px-4 text-right">
+                                         <div className="flex items-center justify-end gap-2.5">
+                                            <button
+                                               onClick={() => {
+                                                  const amountStr = prompt(`Adjust balance for @${user.username} (Use negative for deduction):`);
+                                                  if (amountStr && !isNaN(Number(amountStr))) {
+                                                     adminAction('ADMIN_ADJUST_BALANCE', { userId: user.id, amount: Number(amountStr) });
+                                                  }
+                                               }}
+                                               className="bg-yellow-500/15 border border-yellow-500/20 text-yellow-500 px-3 py-1.5 rounded-xl text-xs font-bold hover:bg-yellow-500/25 transition-colors"
+                                            >
+                                               Adjust Balance
+                                            </button>
+                                            <button
+                                               onClick={() => adminAction('TOGGLE_LEADERBOARD_APPROVAL', { userId: user.id })}
+                                               className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all border ${
+                                                 user.approved_for_leaderboard !== false 
+                                                   ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20' 
+                                                   : 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20'
+                                               }`}
+                                            >
+                                               Leaderboard: {user.approved_for_leaderboard !== false ? 'Approved' : 'Hidden'}
+                                            </button>
+                                         </div>
+                                      </td>
+                                   </tr>
+                                );
+                             })}
+                          </tbody>
+                       </table>
+                    </div>
+                    {state?.users?.filter(u => !u.is_bot && (u.username.toLowerCase().includes(searchQuery.toLowerCase()) || u.uniqueId.includes(searchQuery))).length === 0 && (
+                       <p className="text-gray-500 text-sm text-center py-8">No real users found matching "{searchQuery}".</p>
+                    )}
                  </div>
 
                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -508,10 +540,33 @@ export default function AdminPanel() {
                         <h3 className="text-white font-bold mb-4 border-b border-gray-800 pb-2">Bots (Display Users)</h3>
                         <div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar pr-2">
                         {state?.users?.filter(u => u.is_bot).map(bot => (
-                           <div key={bot.id} className="bg-[#1a1c23] border border-dashed border-gray-700/50 rounded-xl p-3 flex items-center justify-between">
+                           <div key={bot.id} className="bg-[#1a1c23] border border-dashed border-gray-700/50 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                               <div>
-                                 <p className="font-bold text-sm text-gray-300">@{bot.username}</p>
-                                 <p className="text-xs text-blue-400 font-mono">Bot Account</p>
+                                 <p className="font-extrabold text-sm text-gray-200">@{bot.username}</p>
+                                 <p className="text-xs text-emerald-400 font-mono font-bold mt-0.5">{bot.balance.toLocaleString()} VTX</p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                 <button
+                                    onClick={() => {
+                                       const amountStr = prompt(`Adjust balance for Bot @${bot.username} (Use negative for deduction):`);
+                                       if (amountStr && !isNaN(Number(amountStr))) {
+                                          adminAction('ADMIN_ADJUST_BALANCE', { userId: bot.id, amount: Number(amountStr) });
+                                       }
+                                    }}
+                                    className="bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 px-2.5 py-1.5 rounded-lg text-[11px] font-bold hover:bg-yellow-500/20 transition-all active:scale-95 shrink-0"
+                                 >
+                                    Adjust Coins
+                                 </button>
+                                 <button
+                                    onClick={() => adminAction('TOGGLE_LEADERBOARD_APPROVAL', { userId: bot.id })}
+                                    className={`px-2.5 py-1.5 text-[11px] font-bold rounded-lg transition-all border shrink-0 ${
+                                      bot.approved_for_leaderboard === true 
+                                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20' 
+                                        : 'bg-red-500/10 text-red-400 border-red-500/25 hover:bg-red-500/15'
+                                    }`}
+                                 >
+                                    Leaderboard: {bot.approved_for_leaderboard === true ? 'Approved' : 'Hidden'}
+                                 </button>
                               </div>
                            </div>
                         ))}

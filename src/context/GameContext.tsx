@@ -317,9 +317,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
     }
 
+    const finalRow = updatedRows[0];
+    const p1Votes = Number(finalRow.player1_votes ?? finalRow.player1Votes ?? 0);
+    const p2Votes = Number(finalRow.player2_votes ?? finalRow.player2Votes ?? 0);
+
     let winnerId: string | null = null;
-    if (battle.player1Votes > battle.player2Votes) winnerId = battle.player1Id;
-    else if (battle.player2Votes > battle.player1Votes) winnerId = battle.player2Id;
+    if (p1Votes > p2Votes) winnerId = battle.player1Id;
+    else if (p2Votes > p1Votes) winnerId = battle.player2Id;
 
     // Optimistically hide the battle globally
     setState(s => ({
@@ -905,7 +909,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (type === 'TOGGLE_LEADERBOARD_APPROVAL') {
           const userToToggle = state.users.find(u => u.id === payload.userId);
           if (!userToToggle) throw new Error("User not found.");
-          const newValue = userToToggle.approved_for_leaderboard === false ? true : false;
+          const isCurrentlyApproved = userToToggle.is_bot
+              ? userToToggle.approved_for_leaderboard === true
+              : userToToggle.approved_for_leaderboard !== false;
+          const newValue = !isCurrentlyApproved;
           const { error } = await supabase.from('users').update({ approved_for_leaderboard: newValue }).eq('id', userToToggle.id);
           if (error) throw error;
           toast.success(`Leaderboard approval toggled!`);
