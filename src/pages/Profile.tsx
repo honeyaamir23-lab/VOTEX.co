@@ -1,4 +1,4 @@
-import { ShieldAlert, LogOut, ArrowDownToLine, Upload, X, ExternalLink, Smartphone, Check, BadgeCheck } from 'lucide-react';
+import { ShieldAlert, LogOut, ArrowDownToLine, Upload, X, ExternalLink, Smartphone, Check, BadgeCheck, ChevronDown, Database, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import React, { useState, useRef } from 'react';
 import { useGame } from '../context/GameContext';
@@ -28,6 +28,8 @@ export default function Profile({ isAdmin }: ProfileProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isUpdatingBalance, setIsUpdatingBalance] = useState(false);
+  const [isTransactionsOpen, setIsTransactionsOpen] = useState(false);
+  const [isRatesOpen, setIsRatesOpen] = useState(false);
 
   React.useEffect(() => {
     if (currentUser?.balance !== undefined) {
@@ -208,46 +210,126 @@ export default function Profile({ isAdmin }: ProfileProps) {
       </div>
 
       {/* My Transactions List */}
-      <div className="pt-4 pb-8">
-        <h3 className="text-xs font-black tracking-widest text-white uppercase mb-3 px-1">MY TRANSACTIONS</h3>
-        {myTransactions.length > 0 ? (
-          <div className="space-y-3">
-             {myTransactions.map((t, idx) => (
-                <div key={idx} className="flex items-center justify-between p-3 bg-[#131823] rounded-2xl border border-gray-800 shadow-md">
-                   <div className="flex items-center gap-3">
-                      {t.isPositive ? (
-                         <div className="w-10 h-10 bg-emerald-500/10 text-emerald-500 rounded-xl border border-emerald-500/20 overflow-hidden flex items-center justify-center flex-shrink-0">
-                            <ArrowDownToLine className="w-5 h-5" />
-                         </div>
-                      ) : (
-                         <div className="w-10 h-10 bg-rose-500/10 text-rose-500 rounded-xl border border-rose-500/20 overflow-hidden flex items-center justify-center flex-shrink-0">
-                            <ArrowDownToLine className="w-5 h-5 rotate-180" />
-                         </div>
-                      )}
-                      <div>
-                         <p className="font-bold text-sm text-white">
-                            {t.isPositive ? '+' : '-'} {t.amount} VTX
-                         </p>
-                         <p className="text-[10px] text-gray-400 capitalize">{t.type.replace('_', ' ').toLowerCase()}</p>
-                         <p className="text-[10px] text-gray-500">{new Date(t.timestamp).toLocaleString()}</p>
-                      </div>
-                   </div>
-                   
-                   <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                      t.status === 'COMPLETED' || t.status === 'APPROVED' || t.status === 'PAID' ? 'bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20' : 
-                      t.status === 'REJECTED' ? 'bg-[#F43F5E]/10 text-[#F43F5E] border border-[#F43F5E]/20' : 
-                      'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20'
-                   }`}>
-                      {t.status}
-                   </div>
-                </div>
-             ))}
+      <div className="pt-4 pb-4">
+        {/* Accordion Trigger */}
+        <button
+          onClick={() => setIsTransactionsOpen(!isTransactionsOpen)}
+          className="w-full flex items-center justify-between p-4 bg-[#131823] rounded-2xl border border-gray-800 shadow-md hover:bg-[#1A1F2E]/60 transition-colors focus:outline-none"
+        >
+          <div className="flex items-center gap-3">
+             <div className="w-10 h-10 bg-[#10B981]/10 text-[#10B981] rounded-xl border border-[#10B981]/20 overflow-hidden flex items-center justify-center flex-shrink-0">
+                <Database className="w-5 h-5" />
+             </div>
+             <div className="text-left">
+                <h3 className="text-sm font-black tracking-widest text-white uppercase px-1">MY TRANSACTIONS</h3>
+                <p className="text-[10px] text-gray-400 px-1">{myTransactions.length} transaction{myTransactions.length !== 1 ? 's' : ''}</p>
+             </div>
           </div>
-        ) : (
-          <div className="text-center py-8 text-gray-500 text-sm bg-[#131823] border border-gray-800 rounded-2xl">
-            No transactions yet.
+          <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${isTransactionsOpen ? 'rotate-180 text-[#10B981]' : ''}`} />
+        </button>
+
+        {isTransactionsOpen && (
+          <div className="mt-3 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+            {myTransactions.length > 0 ? (
+               <div className="space-y-3">
+                  {myTransactions.map((t, idx) => (
+                     <div key={idx} className="flex items-center justify-between p-3 bg-[#131823] rounded-2xl border border-gray-800 shadow-md">
+                        <div className="flex items-center gap-3">
+                           {t.isPositive ? (
+                              <div className="w-10 h-10 bg-emerald-500/10 text-emerald-500 rounded-xl border border-emerald-500/20 overflow-hidden flex items-center justify-center flex-shrink-0">
+                                 <ArrowDownToLine className="w-5 h-5" />
+                              </div>
+                           ) : (
+                              <div className="w-10 h-10 bg-rose-500/10 text-rose-500 rounded-xl border border-rose-500/20 overflow-hidden flex items-center justify-center flex-shrink-0">
+                                 <ArrowDownToLine className="w-5 h-5 rotate-180" />
+                              </div>
+                           )}
+                           <div>
+                              <p className="font-bold text-sm text-white">
+                                 {t.isPositive ? '+' : '-'} {t.amount} VTX
+                              </p>
+                              <p className="text-[10px] text-gray-400 capitalize">{t.type.replace('_', ' ').toLowerCase()}</p>
+                              <p className="text-[10px] text-gray-500">{new Date(t.timestamp).toLocaleString()}</p>
+                           </div>
+                        </div>
+                        
+                        <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                           t.status === 'COMPLETED' || t.status === 'APPROVED' || t.status === 'PAID' ? 'bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20' : 
+                           t.status === 'REJECTED' ? 'bg-[#F43F5E]/10 text-[#F43F5E] border border-[#F43F5E]/20' : 
+                           'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20'
+                        }`}>
+                           {t.status}
+                        </div>
+                     </div>
+                  ))}
+               </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500 text-sm bg-[#131823] border border-gray-800 rounded-2xl">
+                No transactions yet.
+              </div>
+            )}
           </div>
         )}
+      </div>
+
+      {/* VTX-C Market Rates */}
+      <div className="pb-8">
+         <button
+            onClick={() => setIsRatesOpen(!isRatesOpen)}
+            className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-[#131823] to-[#1e2538] rounded-2xl border border-gray-800 shadow-md hover:border-[#10B981]/30 transition-all focus:outline-none group"
+         >
+            <div className="flex items-center gap-3">
+               <div className="w-10 h-10 bg-[#10B981]/10 text-[#10B981] rounded-xl border border-[#10B981]/20 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                  <TrendingUp className="w-5 h-5" />
+               </div>
+               <div className="text-left">
+                  <h4 className="text-sm font-black tracking-widest text-[#10B981] uppercase px-1">VTX-C MARKET RATES</h4>
+                  <p className="text-[10px] text-gray-400 px-1">Global Exchange Conversion Rates</p>
+               </div>
+            </div>
+            <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${isRatesOpen ? 'rotate-180 text-[#10B981]' : ''}`} />
+         </button>
+
+         {isRatesOpen && (
+            <div className="mt-3 bg-[#0D111A] border border-gray-800 rounded-2xl p-4 shadow-xl animate-in fade-in duration-300">
+               <div className="overflow-hidden rounded-xl border border-gray-800 bg-[#07090E]">
+                  <table className="w-full text-left border-collapse font-mono text-xs text-gray-300">
+                     <thead>
+                        <tr className="border-b border-gray-800 bg-[#131823]/50 text-[10px] font-black uppercase text-[#10B981] tracking-wider">
+                           <th className="py-2.5 px-4 font-sans">Currency</th>
+                           <th className="py-2.5 px-4 text-right font-sans">Rate</th>
+                        </tr>
+                     </thead>
+                     <tbody className="divide-y divide-gray-800/40">
+                        <tr className="hover:bg-gray-800/20">
+                           <td className="py-3 px-4 font-bold text-white flex items-center gap-2">
+                              <span className="text-xs">🇵🇰</span> PKR (Pakistani Rupee)
+                           </td>
+                           <td className="py-3 px-4 text-right font-bold text-[#10B981]">1 VTX = 1.02 PKR</td>
+                        </tr>
+                        <tr className="hover:bg-gray-800/20">
+                           <td className="py-3 px-4 font-bold text-white flex items-center gap-2">
+                              <span className="text-xs">🇺🇸</span> USD (United States Dollar)
+                           </td>
+                           <td className="py-3 px-4 text-right font-bold text-[#10B981]">1 VTX = 0.00369 USD</td>
+                        </tr>
+                        <tr className="hover:bg-gray-800/20">
+                           <td className="py-3 px-4 font-bold text-white flex items-center gap-2">
+                              <span className="text-xs">🇮🇳</span> INR (Indian Rupee)
+                           </td>
+                           <td className="py-3 px-4 text-right font-bold text-[#10B981]">1 VTX = 0.332 INR</td>
+                        </tr>
+                        <tr className="hover:bg-gray-800/20">
+                           <td className="py-3 px-4 font-bold text-white flex items-center gap-2">
+                              <span className="text-xs">🇨🇳</span> CNY (Chinese Yuan)
+                           </td>
+                           <td className="py-3 px-4 text-right font-bold text-[#10B981]">1 VTX = 0.0267 CNY</td>
+                        </tr>
+                     </tbody>
+                  </table>
+               </div>
+            </div>
+         )}
       </div>
 
       <div className="pt-6 text-center">

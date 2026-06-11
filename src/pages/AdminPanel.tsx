@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Users, Activity, Wallet, ArrowDownToLine, ArrowUpFromLine, Coins, Settings, Database, Server, Check, X, ImageIcon, Swords, LifeBuoy } from 'lucide-react';
+import { Users, Activity, Wallet, ArrowDownToLine, ArrowUpFromLine, Coins, Settings, Database, Server, Check, X, ImageIcon, Swords, LifeBuoy, ChevronDown } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useGame } from '../context/GameContext';
 import toast from 'react-hot-toast';
@@ -8,7 +8,18 @@ export default function AdminPanel() {
   const tabs = ['Stats', 'Deposits', 'Withdrawals', 'Battles', 'Users', 'Support', 'Settings'];
   const [activeTab, setActiveTab] = useState('Stats');
   const [selectedReceipt, setSelectedReceipt] = useState<string | null>(null);
-  const { state, adminAction } = useGame();
+  const { state, adminAction, currentUser } = useGame();
+  
+  if (!currentUser || currentUser.email !== 'honeyaamir23@gmail.com') {
+     return (
+       <div className="flex items-center justify-center h-screen bg-[#050505] text-white p-4">
+         <div className="bg-[#131823] border border-red-500/20 rounded-2xl p-6 text-center max-w-sm shadow-xl">
+           <h2 className="text-xl font-bold mb-2">Access Denied</h2>
+           <p className="text-sm text-gray-455">This control panel is strictly restricted to administrator credentials.</p>
+         </div>
+       </div>
+     );
+  }
   
   const stats = state?.platformStats || { totalCommission: 0, activeBattles: 0, pendingDeposits: 0, pendingWithdrawals: 0 };
   const usersCount = state?.users?.length || 0;
@@ -25,6 +36,7 @@ export default function AdminPanel() {
   const pendingWithdrawalsList = state?.pendingRequests?.filter(r => r.type === 'WITHDRAWAL' && r.status === 'PENDING') || [];
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [isLiveStatsOpen, setIsLiveStatsOpen] = useState(false);
 
   return (
     <div className="flex flex-col sm:flex-row h-full w-full bg-[#050505] overflow-hidden">
@@ -115,6 +127,159 @@ export default function AdminPanel() {
                   <div className="text-3xl font-black text-white">{stats.pendingWithdrawals}</div>
                 </div>
               </div>
+
+               {/* COLLAPSIBLE VOTEX LIVE STATISTICS DASHBOARD */}
+               <div className="space-y-3">
+                  <button
+                     onClick={() => setIsLiveStatsOpen(!isLiveStatsOpen)}
+                     className="w-full flex items-center justify-between p-5 bg-gradient-to-br from-[#0c0f18] to-[#131823] border border-[#10B981]/30 rounded-2xl shadow-[0_0_15px_rgba(16,185,129,0.05)] hover:border-[#10B981]/50 transition-all focus:outline-none group text-left"
+                  >
+                     <div className="flex items-center gap-4">
+                        <span className="relative flex h-3.5 w-3.5 shrink-0">
+                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                           <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-red-500"></span>
+                        </span>
+                        <div>
+                           <h3 className="text-sm font-black tracking-widest text-[#10B981] uppercase">VOTEX LIVE STATISTICS / لائیو ڈیش بورڈ</h3>
+                           <p className="text-[10px] text-gray-400 font-sans">Match logs, ledger status & current user balances</p>
+                        </div>
+                     </div>
+                     <div className="flex items-center gap-3">
+                        <span className="text-[10px] font-mono bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-0.5 rounded-full hidden sm:inline-block">
+                           {state?.battles?.filter(b => b.status === 'LIVE').length || 0} ongoing
+                        </span>
+                        <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${isLiveStatsOpen ? 'rotate-180 text-[#10B981]' : ''}`} />
+                     </div>
+                  </button>
+
+                  {isLiveStatsOpen && (
+                     <div className="bg-gradient-to-br from-[#0c0f18] to-[#06080d] border border-[#10B981]/30 rounded-2xl p-5 lg:p-6 shadow-[0_0_20px_rgba(16,185,129,0.1)] space-y-6 animate-in fade-in duration-300">
+                        {/* Live Dashboard Header */}
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-gray-800 pb-4 gap-3">
+                          <div className="flex items-center gap-3">
+                            <span className="relative flex h-3 w-3">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                            </span>
+                            <div>
+                              <h3 className="text-lg font-black tracking-wider text-white">VOTEX Live Network Status</h3>
+                              <p className="text-[10px] text-gray-500 font-mono uppercase tracking-widest">Connected to Database Ledger</p>
+                            </div>
+                          </div>
+                          <div className="bg-black/40 border border-gray-800 rounded-xl px-4 py-2 font-mono text-xs flex items-center gap-2">
+                            <span className="text-gray-400">Ongoing Live Matches:</span>
+                            <span className="text-emerald-400 font-extrabold text-sm">
+                              {state?.battles?.filter(b => b.status === 'LIVE').length || 0} Live
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* All Users' Coin Balances List */}
+                        <div className="space-y-3">
+                           <div className="flex justify-between items-center">
+                              <h4 className="text-xs font-black uppercase tracking-widest text-[#10B981]">All Users' Coin Balances / صارف بيلنس</h4>
+                              <span className="text-[10px] font-mono text-gray-500">Total Coins Circulating: {state?.users?.reduce((sum, u) => sum + (u.balance || 0), 0).toLocaleString()} VTX</span>
+                           </div>
+                           <div className="bg-black/30 border border-gray-800 rounded-xl p-4 max-h-60 overflow-y-auto custom-scrollbar space-y-2">
+                      {state?.users?.map((u) => (
+                        <div key={u.id} className="flex justify-between items-center bg-[#07090E]/60 p-3 rounded-lg border border-gray-800/40">
+                          <div className="flex items-center gap-3 w-2/3">
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center font-black text-xs uppercase shrink-0 ${u.is_bot ? 'bg-purple-500/20 text-purple-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                              {u.username.substring(0, 2)}
+                            </div>
+                            <div className="truncate">
+                              <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                                <span className="truncate">@{u.username}</span>
+                                {u.is_bot && <span className="text-[8px] bg-purple-500/25 text-purple-400 border border-purple-500/30 px-1 py-0.2 rounded shrink-0 font-sans">BOT (بوٹ)</span>}
+                              </div>
+                              <div className="font-mono text-[9px] text-gray-500 truncate">ID: {u.uniqueId} | {u.email}</div>
+                            </div>
+                          </div>
+                          <div className="text-sm font-mono font-black text-emerald-400 w-1/3 text-right">
+                            {Number(u.balance || 0).toLocaleString()} VTX
+                          </div>
+                        </div>
+                      ))}
+                           </div>
+                        </div>
+
+                        {/* Dedicated "Live Match Logs" Table */}
+                        <div className="space-y-3 pt-2">
+                           <div className="flex justify-between items-center">
+                              <h4 className="text-xs font-black uppercase tracking-widest text-[#10B981]">Dedicated Live Match Logs / میچ کی تفصيل</h4>
+                              <span className="text-[10px] font-mono text-gray-500">Logged Matches: {state?.battles?.length || 0}</span>
+                           </div>
+
+                           <div className="overflow-x-auto rounded-xl border border-gray-800 bg-black/40 custom-scrollbar">
+                              <table className="w-full text-left border-collapse min-w-[550px] text-xs font-mono">
+                                 <thead>
+                                    <tr className="border-b border-gray-800 bg-[#131823]/60 text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">
+                                       <th className="py-3 px-4">Match ID (میچ کا نمبر)</th>
+                                       <th className="py-3 px-4">Players (کن دو بندوں کا میچ تھا)</th>
+                                       <th className="py-3 px-4 text-center">Result (کس نے جیتا / کون ہارا)</th>
+                                       <th className="py-3 px-4 text-right">Amount (کتنے کوائنز کی انٹری تھی)</th>
+                                    </tr>
+                                 </thead>
+                                 <tbody className="divide-y divide-gray-800/40">
+                                    {state?.battles?.map((battle) => {
+                                       const p1 = state.users.find(u => u.id === battle.player1Id);
+                                       const p2 = state.users.find(u => u.id === battle.player2Id);
+                                       const winner = battle.winnerId ? state.users.find(u => u.id === battle.winnerId) : null;
+                                       
+                                       let resultText = "In Progress";
+                                       let resultColor = "text-yellow-500";
+                                       if (battle.status === 'LIVE') {
+                                          resultText = "🟢 Live Match";
+                                          resultColor = "text-[#10B981] animate-pulse";
+                                       } else if (battle.status === 'COMPLETED') {
+                                          if (winner) {
+                                             resultText = `Winner: @${winner.username}`;
+                                             resultColor = "text-emerald-400 font-bold";
+                                          } else {
+                                             resultText = "Draw / ڈرا";
+                                             resultColor = "text-gray-400";
+                                          }
+                                       } else if (battle.status === 'CANCELLED') {
+                                          resultText = "❌ Cancelled";
+                                          resultColor = "text-red-400";
+                                       } else {
+                                          resultText = `Pending (${battle.status})`;
+                                          resultColor = "text-slate-500";
+                                       }
+
+                                       return (
+                                          <tr key={battle.id} className="hover:bg-gray-800/20 transition-colors">
+                                             <td className="py-3 px-4 font-bold text-white">
+                                                {battle.id}
+                                             </td>
+                                             <td className="py-3 px-4 font-sans text-white">
+                                                <span className="font-bold text-sky-400">@{p1?.username || 'Unknown'}</span>
+                                                <span className="text-gray-500 mx-2 text-xs">vs</span>
+                                                <span className="font-bold text-indigo-400">@{p2?.username || 'Pending'}</span>
+                                             </td>
+                                             <td className={`py-3 px-4 text-center font-sans text-xs font-semibold ${resultColor}`}>
+                                                {resultText}
+                                             </td>
+                                             <td className="py-3 px-4 text-right text-emerald-400 font-bold">
+                                                {battle.stake?.toLocaleString() || "0"} VTX
+                                             </td>
+                                          </tr>
+                                       );
+                                    })}
+                                    {(!state?.battles || state.battles.length === 0) && (
+                                       <tr>
+                                          <td colSpan={4} className="py-8 text-center text-gray-500">
+                                             No matches logged.
+                                          </td>
+                                       </tr>
+                                    )}
+                                 </tbody>
+                              </table>
+                           </div>
+                        </div>
+                     </div>
+                  )}
+               </div>
 
               {/* Financial Overview Grid */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
