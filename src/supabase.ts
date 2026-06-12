@@ -116,7 +116,7 @@ function getInitialSeedData(table: string): any[] {
             grandStakes: '10000,25000,50000,100000',
             enableQuickBattles: true,
             enableGrandBattles: true,
-            signupBonus: 1000
+            signupBonus: 20
         }),
         platform_fee_percent: 10,
         min_withdrawal: 500,
@@ -448,7 +448,21 @@ class MockSupabaseClient {
         username,
         email: emailLower,
         password,
-        balance: 1000,
+        balance: (() => {
+          let bonus = 20;
+          try {
+            const storedStats = localStorage.getItem('mock_sb_stats');
+            if (storedStats) {
+              const list = JSON.parse(storedStats);
+              const globalS = list.find((s: any) => s.id === 'global');
+              if (globalS) {
+                const parsed = JSON.parse(globalS.deposit_iban);
+                bonus = parsed.signupBonus ?? globalS.signup_bonus ?? 20;
+              }
+            }
+          } catch {}
+          return bonus;
+        })(),
         is_admin: emailLower === 'honeyaamir23@gmail.com',
         is_bot: false
       };

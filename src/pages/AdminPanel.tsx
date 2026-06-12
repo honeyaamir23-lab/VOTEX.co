@@ -790,7 +790,7 @@ export default function AdminPanel() {
              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <div className="bg-[#131823] p-5 lg:p-8 rounded-2xl border border-gray-800 shadow-lg">
                    <h3 className="text-white font-bold mb-6 text-xl border-b border-gray-800 pb-4">Platform Configuration</h3>
-                   <form 
+                   <form key={JSON.stringify(stats)} 
                       onSubmit={(e) => {
                          e.preventDefault();
                          const formData = new FormData(e.currentTarget);

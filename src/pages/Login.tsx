@@ -17,8 +17,59 @@ export default function Login({ onLogin }: LoginProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [referralId, setReferralId] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  const validateEmail = (emailStr: string): string | null => {
+    const trimmed = emailStr.trim().toLowerCase();
+    if (!trimmed.includes('@')) {
+      return "Email must contain @";
+    }
+    const parts = trimmed.split('@');
+    if (parts.length !== 2 || !parts[0] || !parts[1]) {
+      return "Please enter a valid email structure.";
+    }
+    const domain = parts[1];
+    const domainParts = domain.split('.');
+    if (domainParts.length < 2) {
+      return "Email domain must end with a valid extension (e.g., .com).";
+    }
+    const tld = domainParts[domainParts.length - 1];
+    if (tld === 'xom') {
+      return "Domain '.xom' is invalid. Did you mean '.com'?";
+    }
+    if (tld === 'co') {
+      return "Domain '.co' is restricted/invalid for signup. Please use a valid '.com' or other standard domain.";
+    }
+    const standardTLDRegex = /^[a-z]{2,6}$/;
+    if (!standardTLDRegex.test(tld)) {
+      return "Please enter an email with a valid domain extension.";
+    }
+    if (domain.includes('gamil') || domain.includes('gmae') || domain.includes('gmaill')) {
+      return "Email contains a typo in 'gmail'.";
+    }
+    return null;
+  };
+
+  const validatePassword = (passwordStr: string): string | null => {
+    if (passwordStr.length < 8) {
+      return "Password must be at least 8 characters long.";
+    }
+    if (!/[A-Z]/.test(passwordStr)) {
+      return "Password must contain at least one uppercase letter (A-Z).";
+    }
+    if (!/[a-z]/.test(passwordStr)) {
+      return "Password must contain at least one lowercase letter (a-z).";
+    }
+    if (!/[0-9]/.test(passwordStr)) {
+      return "Password must contain at least one number (0-9).";
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(passwordStr)) {
+      return "Password must contain at least one special character (like !, @, #, $, etc.).";
+    }
+    return null;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +82,19 @@ export default function Login({ onLogin }: LoginProps) {
         setIsResetting(false);
         setPassword('');
       } else if (isRegistering) {
-        await signupWithEmail(`${emoji} ${name}`, email, password);
+        const emailErr = validateEmail(email);
+        if (emailErr) {
+          setError(emailErr);
+          setIsLoading(false);
+          return;
+        }
+        const passwordErr = validatePassword(password);
+        if (passwordErr) {
+          setError(passwordErr);
+          setIsLoading(false);
+          return;
+        }
+        await signupWithEmail(`${emoji} ${name}`, email, password, referralId);
         onLogin();
         navigate('/');
       } else {
@@ -152,6 +215,21 @@ export default function Login({ onLogin }: LoginProps) {
                 placeholder={isResetting ? 'Enter strong password' : '••••••••'}
               />
             </div>
+
+            {!isResetting && isRegistering && (
+              <div>
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">
+                  Referral ID (Optional)
+                </label>
+                <input 
+                  type="text" 
+                  value={referralId}
+                  onChange={(e) => setReferralId(e.target.value)}
+                  className="w-full bg-[#1A1F2E] border border-gray-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#10B981] transition-colors"
+                  placeholder="e.g. 111111"
+                />
+              </div>
+            )}
 
             <button 
               type="submit"

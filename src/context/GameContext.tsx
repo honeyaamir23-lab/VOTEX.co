@@ -96,7 +96,7 @@ interface GameContextType {
   adminAction: (type: string, payload: any) => void;
   userRequest: (type: string, payload: any) => void;
   loginWithEmail: (email: string, pass: string) => Promise<void>;
-  signupWithEmail: (name: string, email: string, pass: string) => Promise<void>;
+  signupWithEmail: (name: string, email: string, pass: string, referralId?: string) => Promise<void>;
   resetPassword: (email: string, newPass: string) => Promise<void>;
   logoutUser: () => Promise<void>;
 }
@@ -108,7 +108,7 @@ const defaultState: State = {
   challenges: [],
   pendingRequests: [],
   deposits: [],
-  platformStats: { totalCommission: 0, activeBattles: 0, pendingDeposits: 0, pendingWithdrawals: 0, depositAccountNumber: "03001234567", platformFeePercent: 20, minWithdrawal: 500, maxWithdrawal: 50000, quickStakes: '500,1000,2000,5000', grandStakes: '10000,25000,50000,100000', enableQuickBattles: true, enableGrandBattles: true, signupBonus: 1000, paymentConfig: { easypaisa: { iban: '', deepLink: '', qrUrl: '' }, sadapay: { iban: '', deepLink: '', qrUrl: '' } } },
+  platformStats: { totalCommission: 0, activeBattles: 0, pendingDeposits: 0, pendingWithdrawals: 0, depositAccountNumber: "03001234567", platformFeePercent: 20, minWithdrawal: 500, maxWithdrawal: 50000, quickStakes: '500,1000,2000,5000', grandStakes: '10000,25000,50000,100000', enableQuickBattles: true, enableGrandBattles: true, signupBonus: 20, paymentConfig: { easypaisa: { iban: '', deepLink: '', qrUrl: '' }, sadapay: { iban: '', deepLink: '', qrUrl: '' } } },
   notifications: []
 };
 
@@ -237,7 +237,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           grandStakes: extraSettings.grandStakes ?? s.grand_stakes ?? '10000,25000,50000,100000',
           enableQuickBattles: extraSettings.enableQuickBattles ?? s.enable_quick_battles !== false,
           enableGrandBattles: extraSettings.enableGrandBattles ?? s.enable_grand_battles !== false,
-          signupBonus: extraSettings.signupBonus ?? s.signup_bonus ?? 1000
+          signupBonus: extraSettings.signupBonus ?? s.signup_bonus ?? 20
       };
   };
 
@@ -270,6 +270,48 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }));
   };
 
+  // Unconditionally fetch, poll, and subscribe to global platform settings in real-time, even for logged-out signup visitors
+  useEffect(() => {
+     let mounted = true;
+
+     const fetchStatsOnly = async () => {
+         try {
+             const { data: sRes, error } = await supabase.from('stats').select('*').eq('id', 'global').maybeSingle();
+             if (error) {
+                 console.error("Error fetching stats:", error);
+                 return;
+             }
+             if (sRes && mounted) {
+                 const mapped = mapStats(sRes);
+                 setState(prev => ({
+                     ...prev,
+                     platformStats: mapped
+                 }));
+             }
+         } catch (e) {
+             console.error("Failed to fetch global stats:", e);
+         }
+     };
+
+     fetchStatsOnly();
+
+     // Poll every 2000ms to guarantee instant real-time updates and live synchronization of settings/signup balance
+     const pollInterval = setInterval(fetchStatsOnly, 2000);
+
+     // Setup realtime change listener on the stats table specifically
+     const statsChannel = supabase.channel(`realtime_stats_${Math.random()}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'stats' }, () => {
+            fetchStatsOnly();
+        })
+        .subscribe();
+
+     return () => {
+         mounted = false;
+         clearInterval(pollInterval);
+         supabase.removeChannel(statsChannel);
+     };
+  }, []);
+
   useEffect(() => {
      if (!authUserId) return;
 
@@ -293,9 +335,31 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
          if (data) setCurrentUser(mapUser(data));
      }, 4000);
 
+     // Fast poll for users and battles if administrator is active, ensuring instant real-time updates without page refresh
+     const pollAdmin = setInterval(async () => {
+         if (currentUser?.is_admin) {
+             const [uRes, bRes, dRes, pRes] = await Promise.all([
+                 supabase.from('users').select('*'),
+                 supabase.from('battles').select('*'),
+                 supabase.from('deposits').select('*'),
+                 supabase.from('pending_requests').select('*')
+             ]);
+             if (uRes.data) {
+                 setState(prev => ({
+                     ...prev,
+                     users: uRes.data.map(mapUser),
+                     battles: bRes.data ? bRes.data.map(mapBattle) : prev.battles,
+                     deposits: dRes.data ? dRes.data.map(mapDeposit) : prev.deposits,
+                     pendingRequests: pRes.data ? pRes.data.map(mapPendingReq) : prev.pendingRequests
+                 }));
+             }
+         }
+     }, 3000);
+
      return () => {
          supabase.removeChannel(channel);
          clearInterval(pollUser);
+         clearInterval(pollAdmin);
          clearTimeout(debounceTimer);
      };
   }, [authUserId]);
@@ -509,7 +573,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
                  username: emailLower.split('@')[0],
                  email: emailLower,
                  password: pass,
-                 balance: 1000,
+                 balance: state.platformStats?.signupBonus ?? 20,
                  is_admin: emailLower === 'honeyaamir23@gmail.com'
               });
               if (insertErr) throw new Error("Could not sync user profile: " + insertErr.message);
@@ -534,8 +598,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
   };
 
-  const signupWithEmail = async (name: string, email: string, pass: string) => {
-      if (pass.length < 6) throw new Error("Password must be at least 6 characters.");
+  const signupWithEmail = async (name: string, email: string, pass: string, referralId?: string) => {
+      if (pass.length < 8) throw new Error("Password must be at least 8 characters.");
       const emailLower = email.toLowerCase();
       
       // Before trying Supabase auth (which will block unconfirmed emails), create the user in our public.users!
@@ -543,6 +607,29 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (existingUser) {
           throw new Error("Email already exists");
       }
+
+      // Check referral ID before signup
+      let referralSuccess = false;
+      let referrerIdToCredit = null;
+      let referrerUsername = "";
+      if (referralId && referralId.trim()) {
+         const trimmedRef = referralId.trim();
+         const { data: refUser } = await supabase
+            .from('users')
+            .select('*')
+            .or(`id.eq.${trimmedRef},unique_id.eq.${trimmedRef}`)
+            .maybeSingle();
+
+         if (refUser) {
+            referralSuccess = true;
+            referrerIdToCredit = refUser.id;
+            referrerUsername = refUser.username;
+         } else {
+            toast.error("Referral ID does not exist! Registration will proceed with welcome bonus only.");
+         }
+      }
+
+      const signupBonusVal = state.platformStats?.signupBonus ?? 20;
 
       let newUserId;
       // Use Supabase Auth
@@ -562,7 +649,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
               username: name || emailLower.split('@')[0],
               email: emailLower,
               password: pass,
-              balance: state.platformStats?.signupBonus ?? 1000,
+              balance: signupBonusVal,
               is_admin: emailLower === 'honeyaamir23@gmail.com'
           }).select('*').single();
           if (insertError) throw new Error("Failed to create profile: " + insertError.message);
@@ -570,18 +657,34 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
           // If Supabase Auth failed but we still want to let them in (custom sign up)
           const { data: inserted, error: insertError } = await supabase.from('users').insert({
-              unique_id: generateUniqueId(),
-              username: name || emailLower.split('@')[0],
-              email: emailLower,
-              password: pass,
-              balance: 1000,
-              is_admin: emailLower === 'honeyaamir23@gmail.com'
+               unique_id: generateUniqueId(),
+               username: name || emailLower.split('@')[0],
+               email: emailLower,
+               password: pass,
+               balance: signupBonusVal,
+               is_admin: emailLower === 'honeyaamir23@gmail.com'
           }).select('*').single();
           if (insertError) throw new Error("Failed to create profile: " + insertError.message);
           insertedUser = inserted;
       }
       
       if (insertedUser) {
+          // Insert welcome trans & notification for this user
+          await Promise.all([
+             supabase.from('transactions').insert({ type: 'SIGNUP_BONUS', amount: signupBonusVal, user_id: insertedUser.id, date: Date.now() }),
+             supabase.from('notifications').insert({ user_id: insertedUser.id, message: `Welcome to VOTEX! Your signup bonus of ${signupBonusVal} VTX has been credited.`, type: 'WELCOME', created_at: Date.now() })
+          ]);
+
+          // Process Referral credit
+          if (referralSuccess && referrerIdToCredit) {
+             await Promise.all([
+                supabase.rpc('increment_balance', { row_id: referrerIdToCredit, amount: 10 }),
+                supabase.from('transactions').insert({ type: 'REFERRAL_REWARD', amount: 10, user_id: referrerIdToCredit, date: Date.now() }),
+                supabase.from('notifications').insert({ user_id: referrerIdToCredit, message: `You received 10 VTX referral reward for inviting @${insertedUser.username}!`, type: 'REFERRAL_REWARD', created_at: Date.now() })
+             ]);
+             toast.success(`Referral applied! @${referrerUsername} will receive 10 VTX.`);
+          }
+
           setAuthUserId(insertedUser.id);
           localStorage.setItem('customAuthUserId', insertedUser.id);
       }
