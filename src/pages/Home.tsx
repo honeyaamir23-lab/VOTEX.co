@@ -375,6 +375,68 @@ export default function Home() {
 
   return (
     <div className="p-4 space-y-6">
+      {/* Premium Compact Live Exchange Ticker (Scrolling Ribbon) */}
+      <div className="bg-gradient-to-r from-emerald-500/10 via-[#0A0D14] to-emerald-500/10 border-y border-emerald-500/20 py-2.5 relative overflow-hidden -mx-4 shadow-lg mb-4">
+         <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-[#0A0D14] to-transparent z-10 pointer-events-none"></div>
+         <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-[#0A0D14] to-transparent z-10 pointer-events-none"></div>
+         
+         <div className="animate-marquee flex items-center gap-8 whitespace-nowrap">
+            {/* Set 1 */}
+            <div className="flex items-center gap-6 text-[11px] font-bold text-gray-300 font-mono">
+               <span className="flex items-center gap-1.5 text-emerald-400 font-sans tracking-wide font-black">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  LIVE VTX RATES:
+               </span>
+               <div className="flex items-center gap-1.5 bg-black/40 px-2.5 py-0.5 rounded-full border border-gray-800">
+                  <span className="text-gray-400">1 VTX =</span>
+                  <span className="text-emerald-400 font-extrabold">1.02 PKR</span>
+               </div>
+               <div className="flex items-center gap-1.5 bg-black/40 px-2.5 py-0.5 rounded-full border border-gray-800">
+                  <span className="text-gray-400">1 VTX =</span>
+                  <span className="text-emerald-400 font-extrabold">0.00369 USD</span>
+               </div>
+               <div className="flex items-center gap-1.5 bg-black/40 px-2.5 py-0.5 rounded-full border border-gray-800">
+                  <span className="text-gray-400">1 VTX =</span>
+                  <span className="text-emerald-400 font-extrabold">0.332 INR</span>
+               </div>
+               <div className="flex items-center gap-1.5 bg-black/40 px-2.5 py-0.5 rounded-full border border-gray-800">
+                  <span className="text-gray-400">1 VTX =</span>
+                  <span className="text-emerald-400 font-extrabold">0.0267 CNY</span>
+               </div>
+               <span className="text-[10px] text-amber-400 font-sans tracking-wide flex items-center gap-1 uppercase font-black">
+                  ★ VOTE FOR YOUR FAVORITE, WIN VTX COINS & CASH OUT! ★
+               </span>
+            </div>
+            
+            {/* Set 2 (for continuous marquee loop) */}
+            <div className="flex items-center gap-6 text-[11px] font-bold text-gray-300 font-mono" aria-hidden="true">
+               <span className="flex items-center gap-1.5 text-emerald-400 font-sans tracking-wide font-black">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  LIVE VTX RATES:
+               </span>
+               <div className="flex items-center gap-1.5 bg-black/40 px-2.5 py-0.5 rounded-full border border-gray-800">
+                  <span className="text-gray-400">1 VTX =</span>
+                  <span className="text-emerald-400 font-extrabold">1.02 PKR</span>
+               </div>
+               <div className="flex items-center gap-1.5 bg-black/40 px-2.5 py-0.5 rounded-full border border-gray-800">
+                  <span className="text-gray-400">1 VTX =</span>
+                  <span className="text-emerald-400 font-extrabold">0.00369 USD</span>
+               </div>
+               <div className="flex items-center gap-1.5 bg-black/40 px-2.5 py-0.5 rounded-full border border-gray-800">
+                  <span className="text-gray-400">1 VTX =</span>
+                  <span className="text-emerald-400 font-extrabold">0.332 INR</span>
+               </div>
+               <div className="flex items-center gap-1.5 bg-black/40 px-2.5 py-0.5 rounded-full border border-gray-800">
+                  <span className="text-gray-400">1 VTX =</span>
+                  <span className="text-emerald-400 font-extrabold">0.0267 CNY</span>
+               </div>
+               <span className="text-[10px] text-amber-400 font-sans tracking-wide flex items-center gap-1 uppercase font-black">
+                  ★ VOTE FOR YOUR FAVORITE, WIN VTX COINS & CASH OUT! ★
+               </span>
+            </div>
+         </div>
+      </div>
+
       <div className="bg-[#10B981] rounded-3xl p-6 text-black relative overflow-hidden">
         <div className="absolute top-0 right-0 p-4 opacity-20">
           <Zap className="w-32 h-32" />

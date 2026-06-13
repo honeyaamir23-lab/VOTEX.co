@@ -464,33 +464,71 @@ export default function Profile({ isAdmin }: ProfileProps) {
                              <option value="" disabled>Select an account</option>
                              <option value="easypaisa">Easypaisa</option>
                              <option value="sadapay">SadaPay</option>
+                             <option value="jazzcash">🔥 JazzCash Business (Recommended Only)</option>
                           </select>
                        </div>
 
                        {(() => {
                            if (!paymentMethod) return null;
                            
-                           const conf = state?.platformStats?.paymentConfig?.[paymentMethod as 'easypaisa' | 'sadapay'] || { iban: '', deepLink: '', qrUrl: '' };
+                           const conf = state?.platformStats?.paymentConfig?.[paymentMethod as 'easypaisa' | 'sadapay' | 'jazzcash'] || { iban: '', deepLink: '', qrUrl: '' };
+                           const isJazzCash = paymentMethod === 'jazzcash';
+                            const title = isJazzCash ? '🔥 JazzCash Business (Recommended)' : paymentMethod === 'easypaisa' ? 'Easypaisa' : 'SadaPay';
+                            const titleColor = isJazzCash ? 'text-amber-500' : paymentMethod === 'easypaisa' ? 'text-white' : 'text-blue-400';
+                            const borderGlow = isJazzCash ? 'border-amber-500/35 shadow-[0_0_20px_rgba(245,158,11,0.08)]' : 'border-gray-800';
 
-                           return (
+                            return (
                                <div className="space-y-4 animate-in fade-in">
-                                  <div className="bg-[#1A1F2E] border border-gray-800 rounded-xl p-4 text-center">
-                                     <h4 className="text-white font-bold mb-1">{paymentMethod === 'easypaisa' ? 'Easypaisa' : 'SadaPay'}</h4>
+                                  <div className={`bg-[#1A1F2E] border ${borderGlow} rounded-xl p-4 text-center`}>
+                                     <h4 className={`font-black uppercase tracking-wider text-sm mb-1 ${titleColor}`}>{title}</h4>
                                      <p className="text-gray-400 text-xs mb-3">Send funds to the following account:</p>
-                                     <div className="bg-black/50 p-4 rounded-lg border border-gray-800 flex flex-col items-center">
-                                        <p className="text-white text-sm font-bold mb-2">Votex Admin</p>
-                                        
-                                        {conf.qrUrl && (
-                                            <div className="bg-white p-2 rounded-xl mb-3 mt-1 shadow-lg max-w-min">
-                                                <img src={conf.qrUrl} alt="Payment QR" className="w-[150px] h-[150px] object-contain" />
+                                     
+                                     {isJazzCash ? (
+                                        <div className="bg-[#131823] p-5 rounded-2xl border border-amber-500/25 relative overflow-hidden flex flex-col items-center">
+                                           {/* Design accent */}
+                                           <div className="absolute top-0 inset-x-0 h-[3px] bg-amber-500"></div>
+                                           
+                                           <div className="bg-amber-500/10 border border-amber-500/30 text-amber-500 text-[9px] px-3 py-1 rounded-full font-black tracking-widest uppercase mb-4 flex items-center gap-1">
+                                              <span className="animate-pulse text-amber-500 font-bold">●</span> RECOMMENDED METHOD (AUTO MATCH)
                                             </div>
-                                        )}
-                                        
-                                        <div className="w-full flex items-center justify-between mt-2 pt-2 border-t border-gray-800/50">
-                                            <span className="text-xs text-gray-500">Account:</span>
-                                            <span className="text-[#10B981] font-mono text-xs sm:text-sm break-all font-bold tracking-widest">{conf.iban || 'Not configured'}</span>
+
+                                            <p className="text-gray-300 text-xs text-center mb-4 max-w-xs leading-relaxed">
+                                               Scan this QR code in your JazzCash app to pay instantly, OR copy the Business IBAN below for a direct transfer. Both are fully supported!
+                                            </p>
+
+                                            <p className="text-amber-500 text-[9px] font-black uppercase tracking-widest mb-2.5 font-mono">Option 1: Scan Shop Counter QR</p>
+                                           
+                                           {conf.qrUrl ? (
+                                               <div className="bg-white p-3 rounded-2xl mb-4 shadow-xl max-w-min border-4 border-amber-500/30">
+                                                   <img src={conf.qrUrl} alt="JazzCash QR" className="w-[150px] h-[150px] object-contain" />
+                                                </div>
+                                           ) : (
+                                               <div className="w-[150px] h-[150px] bg-gray-800/40 rounded-2xl flex flex-col items-center justify-center border border-dashed border-gray-750 mb-4 p-4 text-center">
+                                                   <span className="text-[10px] text-gray-500 font-bold font-mono">QR Pending Setup</span>
+                                                </div>
+                                           )}
+                                           
+                                           <div className="w-full flex flex-col items-center gap-1.5 mt-2 pt-3.5 border-t border-gray-800/80">
+                                                <span className="text-[9px] text-amber-500 font-black uppercase tracking-widest font-mono">Option 2: Copy Business IBAN</span>
+                                                <span className="text-white font-mono text-xs sm:text-sm break-all font-black tracking-wider bg-black/40 px-3 py-1.5 rounded-lg border border-gray-800 text-center w-full">{conf.iban || 'Not configured'}</span>
+                                            </div>
                                         </div>
-                                     </div>
+                                     ) : (
+                                        <div className="bg-black/50 p-4 rounded-lg border border-gray-800 flex flex-col items-center">
+                                           <p className="text-white text-sm font-bold mb-2">Votex Admin</p>
+                                           
+                                           {conf.qrUrl && (
+                                               <div className="bg-white p-2 rounded-xl mb-3 mt-1 shadow-lg max-w-min">
+                                                   <img src={conf.qrUrl} alt="Payment QR" className="w-[150px] h-[150px] object-contain" />
+                                               </div>
+                                           )}
+                                           
+                                           <div className="w-full flex items-center justify-between mt-2 pt-2 border-t border-gray-800/50">
+                                               <span className="text-xs text-gray-500">Account:</span>
+                                               <span className="text-[#10B981] font-mono text-xs sm:text-sm break-all font-bold tracking-widest">{conf.iban || 'Not configured'}</span>
+                                           </div>
+                                        </div>
+                                     )}
                                      
                                      {conf.iban && (
                                      <button 
@@ -499,13 +537,17 @@ export default function Profile({ isAdmin }: ProfileProps) {
                                           setToastMessage("Account copied!");
                                           setTimeout(() => setToastMessage(null), 3000);
                                        }}
-                                       className="w-full mt-3 bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/30 font-bold py-2.5 rounded-lg hover:bg-[#10B981]/20 transition-colors flex items-center justify-center gap-2"
+                                       className={`w-full mt-3 font-bold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 ${
+                                          isJazzCash 
+                                            ? 'bg-amber-500/10 text-amber-500 border border-amber-500/30 hover:bg-amber-500/20 active:scale-95' 
+                                            : 'bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/30 hover:bg-[#10B981]/20 active:scale-95'
+                                       }`}
                                      >
                                         Copy Account
                                      </button>
                                      )}
 
-                                     {conf.deepLink && (
+                                     {conf.deepLink && !isJazzCash && (
                                      <button 
                                        onClick={() => {
                                           window.location.href = conf.deepLink;
@@ -620,7 +662,13 @@ export default function Profile({ isAdmin }: ProfileProps) {
                          if (amount > (currentUser?.balance || 0)) {
                             throw new Error('Insufficient balance.');
                          }
-                         await userRequest('REQUEST_WITHDRAWAL', { amount, easypaisaNumber: `[${method}] ${account}` });
+                         const cleanedAccount = account.replace(/\s+/g, '').toUpperCase();
+                         const ibanRegex = /^[A-Z]{2}[0-9]{2}[A-Z0-9]{4}[0-9]{12}$/;
+                         if (cleanedAccount.length !== 24 || !ibanRegex.test(cleanedAccount)) {
+                            toast.error("Error: Payouts are strictly processed via official Bank IBAN. Please enter a valid 24-character IBAN format.");
+                            throw new Error("Invalid IBAN format.");
+                         }
+                         await userRequest('REQUEST_WITHDRAWAL', { amount, easypaisaNumber: `[${method}] ${cleanedAccount}` });
                          (e.target as HTMLFormElement).reset();
                          setIsWithdrawModalOpen(false);
                          setWithdrawAmount('');
@@ -640,10 +688,11 @@ export default function Profile({ isAdmin }: ProfileProps) {
                           required
                           className="w-full bg-[#1A1F2E] border border-gray-800 rounded-xl px-4 py-3 text-white font-bold focus:outline-none focus:border-[#F43F5E] transition-colors appearance-none mb-4"
                        >
-                          <option value="Easypaisa">Easypaisa</option>
-                          <option value="SadaPay">SadaPay</option>
-                          <option value="JazzCash">JazzCash</option>
-                          <option value="Bank">Bank Transfer</option>
+                                                     <option value="JazzCash">JazzCash (IBAN Only)</option>
+                           <option value="EasyPaisa">EasyPaisa (IBAN Only)</option>
+                           <option value="SadaPay">SadaPay (IBAN Only)</option>
+                           <option value="NayaPay">NayaPay (IBAN Only)</option>
+                           <option value="Bank">Standard Bank Transfer (IBAN Only)</option>
                        </select>
                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">Amount (Min {state.platformStats?.minWithdrawal || 500} - Max {state.platformStats?.maxWithdrawal || 50000})</label>
                        <input 
@@ -663,11 +712,11 @@ export default function Profile({ isAdmin }: ProfileProps) {
                            </div>
                         )}
                     <div>
-                       <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">Account No. / IBAN / Wallet Details</label>
+                       <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">Official 24-Character Bank IBAN Only</label>
                        <input 
                           name="account"
                           type="text"
-                          placeholder="e.g. 03xx xxxxxxx or PK34..."
+                          placeholder="e.g. PK34 SADA 1234 5678 9012 3456"
                           required
                           className="w-full bg-[#1A1F2E] border border-gray-800 rounded-xl px-4 py-3 text-white font-bold focus:outline-none focus:border-[#F43F5E] transition-colors"
                        />

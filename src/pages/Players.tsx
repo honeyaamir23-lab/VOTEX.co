@@ -1,132 +1,281 @@
-import React, { useState } from 'react';
-import { Zap, ShieldAlert, Swords, Gift, X } from 'lucide-react';
-import { useGame } from '../context/GameContext';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import { Zap, ShieldAlert, Swords, Gift, X } from "lucide-react";
+import { useGame } from "../context/GameContext";
+import { useNavigate } from "react-router-dom";
 
 export default function Players() {
   const { state, currentUser, userRequest } = useGame();
   const navigate = useNavigate();
   const [giftTarget, setGiftTarget] = useState<string | null>(null);
-  const [giftAmount, setGiftAmount] = useState<string>('');
-  
-  const users = state?.users?.filter(u => u.id !== currentUser?.id && !u.is_bot) || [];
+  const [giftAmount, setGiftAmount] = useState<string>("");
+
+  const currentUserId = currentUser?.id;
+
+  // 1. Identify allowed user IDs (opponents from battles, and referrer/referrals from REFERRAL_REWARD transactions)
+  const allowedUserIds = new Set<string>();
+
+  if (currentUserId) {
+    // Collect opponent IDs from battles
+    state?.battles?.forEach((battle) => {
+      if (battle.player1Id === currentUserId && battle.player2Id) {
+        allowedUserIds.add(battle.player2Id);
+      } else if (battle.player2Id === currentUserId && battle.player1Id) {
+        allowedUserIds.add(battle.player1Id);
+      }
+    });
+
+    // Collect referral connections (both referrer and referrals)
+    state?.transactions?.forEach((tx) => {
+      if (tx.type === "REFERRAL_REWARD") {
+        if (tx.sourceUserId === currentUserId && tx.userId) {
+          allowedUserIds.add(tx.userId);
+        }
+        if (tx.userId === currentUserId && tx.sourceUserId) {
+          allowedUserIds.add(tx.sourceUserId);
+        }
+      }
+    });
+  }
+
+  // Filter the list to only include connected players
+  const users =
+    state?.users?.filter(
+      (u) => u.id !== currentUserId && allowedUserIds.has(u.id),
+    ) || [];
+
+  const getRelationshipBadges = (userId: string) => {
+    if (!currentUserId) return null;
+    const badges: {
+      text: string;
+      bg: string;
+      textCol: string;
+      border: string;
+    }[] = [];
+
+    const isReferrer = state?.transactions?.some(
+      (tx) =>
+        tx.type === "REFERRAL_REWARD" &&
+        tx.sourceUserId === currentUserId &&
+        tx.userId === userId,
+    );
+    const isReferral = state?.transactions?.some(
+      (tx) =>
+        tx.type === "REFERRAL_REWARD" &&
+        tx.userId === currentUserId &&
+        tx.sourceUserId === userId,
+    );
+    const isOpponent = state?.battles?.some(
+      (battle) =>
+        (battle.player1Id === currentUserId && battle.player2Id === userId) ||
+        (battle.player2Id === currentUserId && battle.player1Id === userId),
+    );
+
+    if (isReferrer) {
+      badges.push({
+        text: "Referrer (دعوت کنندہ)",
+        bg: "bg-amber-500/10",
+        textCol: "text-amber-400",
+        border: "border-amber-500/20",
+      });
+    }
+    if (isReferral) {
+      badges.push({
+        text: "Your Referral (آپ کا ریفر)",
+        bg: "bg-purple-500/10",
+        textCol: "text-purple-400",
+        border: "border-purple-500/20",
+      });
+    }
+    if (isOpponent) {
+      badges.push({
+        text: "Opponent (میچ پلیئر)",
+        bg: "bg-emerald-500/10",
+        textCol: "text-emerald-400",
+        border: "border-emerald-500/20",
+      });
+    }
+
+    if (badges.length === 0) return null;
+
+    return (
+      <div className="flex flex-wrap gap-1.5 mt-1.5">
+        {badges.map((b, i) => (
+          <span
+            key={i}
+            className={`text-[9px] uppercase font-black tracking-wider px-2 py-0.5 rounded-md border ${b.bg} ${b.textCol} ${b.border}`}
+          >
+            {b.text}
+          </span>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <div className="p-4 space-y-6 relative">
       <div className="mb-6">
-        <h2 className="text-xl font-bold tracking-tight text-white mb-1">Players</h2>
+        <h2 className="text-xl font-bold tracking-tight text-white mb-1">
+          Players
+        </h2>
         <p className="text-sm text-gray-500">Find opponents and share VTX</p>
       </div>
 
-       <div className="space-y-3 relative z-0">
-         {users.length > 0 ? (
-           users.map(user => {
-               const parts = user.username.trim().split(' ');
-               let emojiIcon: React.ReactNode = <Zap className="w-6 h-6" />;
-               let displayName = user.username;
-               if (parts.length > 1 && parts[0].length <= 3 && /\p{Emoji}/u.test(parts[0])) {
-                  emojiIcon = <span className="text-2xl">{parts[0]}</span>;
-                  displayName = parts.slice(1).join(' ');
-               } else {
-                  const firstChar = Array.from(user.username.trim())[0] as string;
-                  emojiIcon = <span className="text-xl font-bold">{firstChar ? firstChar.toUpperCase() : 'U'}</span>;
-               }
-               
-               return (
-              <div key={user.id} className="bg-[#131823] border border-gray-800 rounded-2xl p-4 flex flex-col gap-3 shadow-lg">
-                 <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center text-gray-400">
-                       {emojiIcon}
-                    </div>
-                    <div>
-                       <h3 className="font-bold text-white">@{displayName}</h3>
-                       <p className="text-xs text-emerald-400 font-mono">{user.balance.toLocaleString()} VTX</p>
-                    </div>
-                 </div>
-                 <div className="flex gap-2 w-full pt-2">
-                     <button 
-                        onClick={() => navigate('/battle/new')}
-                        className="flex-1 bg-[#1A1F2E] hover:bg-[#252B3B] text-emerald-400 border border-gray-800 font-bold py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition-colors active:scale-95 text-xs"
-                     >
-                        <Swords className="w-4 h-4" />
-                        Challenge
-                     </button>
-                     <button 
-                        onClick={() => setGiftTarget(user.id)}
-                        className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition-colors active:scale-95 text-xs shadow-lg shadow-purple-900/20"
-                     >
-                        <Gift className="w-4 h-4" />
-                        Send VTX
-                     </button>
-                 </div>
+      <div className="space-y-3 relative z-0">
+        {users.length > 0 ? (
+          users.map((user) => {
+            const parts = user.username.trim().split(" ");
+            let emojiIcon: React.ReactNode = <Zap className="w-6 h-6" />;
+            let displayName = user.username;
+            if (
+              parts.length > 1 &&
+              parts[0].length <= 3 &&
+              /\p{Emoji}/u.test(parts[0])
+            ) {
+              emojiIcon = <span className="text-2xl">{parts[0]}</span>;
+              displayName = parts.slice(1).join(" ");
+            } else {
+              const firstChar = Array.from(user.username.trim())[0] as string;
+              emojiIcon = (
+                <span className="text-xl font-bold">
+                  {firstChar ? firstChar.toUpperCase() : "U"}
+                </span>
+              );
+            }
+
+            return (
+              <div
+                key={user.id}
+                className="bg-[#131823] border border-gray-800 rounded-2xl p-4 flex flex-col gap-3 shadow-lg"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center text-gray-400">
+                    {emojiIcon}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-white">@{displayName}</h3>
+                    <p className="text-xs text-emerald-400 font-mono">
+                      {user.balance.toLocaleString()} VTX
+                    </p>
+                    {getRelationshipBadges(user.id)}
+                  </div>
+                </div>
+                <div className="flex gap-2 w-full pt-2">
+                  <button
+                    onClick={() => navigate("/battle/new")}
+                    className="flex-1 bg-[#1A1F2E] hover:bg-[#252B3B] text-emerald-400 border border-gray-800 font-bold py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition-colors active:scale-95 text-xs"
+                  >
+                    <Swords className="w-4 h-4" />
+                    Challenge
+                  </button>
+                  <button
+                    onClick={() => setGiftTarget(user.id)}
+                    className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition-colors active:scale-95 text-xs shadow-lg shadow-purple-900/20"
+                  >
+                    <Gift className="w-4 h-4" />
+                    Send VTX
+                  </button>
+                </div>
               </div>
-           )})
-         ) : (
-            <div className="text-center py-10 opacity-50">
-               <ShieldAlert className="w-10 h-10 mx-auto mb-2 text-gray-500" />
-               <p>No other players found.</p>
-             </div>
-         )}
+            );
+          })
+        ) : (
+          <div className="text-center py-12 px-6 bg-[#131823] border border-gray-800 rounded-3xl">
+            <ShieldAlert className="w-12 h-12 mx-auto mb-3 text-gray-500 animate-pulse" />
+            <h3 className="text-white font-bold text-base mb-1.5">
+              کوئی پلیئر نہیں ملا (No Players Found)
+            </h3>
+            <p className="text-xs text-gray-400 max-w-xs mx-auto leading-relaxed mb-5">
+              پلیئرز کی لسٹ میں صرف وہ لوگ نظر آئیں گے جن کے ریفرل لنک/کوڈ سے آپ آئے ہیں، یا جن کے ساتھ آپ میچ کھیل چکے ہیں۔
+            </p>
+            <div className="flex flex-col gap-2.5 max-w-xs mx-auto text-left text-xs bg-[#1A1F2E] p-4 rounded-xl border border-gray-800/60">
+              <div className="flex items-start gap-2 text-gray-300">
+                <span className="text-emerald-500 mt-0.5">●</span>
+                <span>
+                  میچ کھیلنے کے لیے <strong>ہوم اسکرین</strong> پر کوئی بھی چیلنج کھیلیں یا نیا میچ شروع کریں۔
+                </span>
+              </div>
+              <div className="flex items-start gap-2 text-gray-300">
+                <span className="text-amber-500 mt-0.5">●</span>
+                <span>اپنے دوستوں کو اپنا ریفرل کوڈ بھیج کر جوائن کروائیں!</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Gift Modal */}
       {giftTarget && (
-         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-[#131823] border border-gray-800 rounded-3xl w-full max-w-sm p-6 shadow-2xl relative">
-               <button 
-                  onClick={() => { setGiftTarget(null); setGiftAmount(''); }}
-                  className="absolute top-4 right-4 text-gray-500 hover:text-white"
-               >
-                  <X className="w-5 h-5" />
-               </button>
-               
-               <div className="text-center mb-6">
-                  <div className="w-16 h-16 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-4 text-purple-400 border border-purple-500/30">
-                     <Gift className="w-8 h-8" />
-                  </div>
-                  <h3 className="text-xl font-bold text-white">Send Gift</h3>
-                  <p className="text-sm text-gray-400 mt-1">Send VTX coins to @{state?.users?.find(u => u.id === giftTarget)?.username}</p>
-               </div>
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-[#131823] border border-gray-800 rounded-3xl w-full max-w-sm p-6 shadow-2xl relative">
+            <button
+              onClick={() => {
+                setGiftTarget(null);
+                setGiftAmount("");
+              }}
+              className="absolute top-4 right-4 text-gray-500 hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
 
-               <div className="space-y-4">
-                  <div>
-                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Amount (VTX)</label>
-                     <input 
-                        type="number"
-                        value={giftAmount}
-                        onChange={e => setGiftAmount(e.target.value)}
-                        placeholder="e.g. 100"
-                        className="w-full bg-[#0A0D14] border border-gray-800 rounded-xl px-4 py-3 text-white text-lg font-mono focus:outline-none focus:border-purple-500 transition-colors text-center"
-                        autoFocus
-                     />
-                  </div>
-                  
-                  <div className="grid grid-cols-3 gap-2">
-                     {[10, 50, 100].map(amt => (
-                        <button
-                           key={amt}
-                           onClick={() => setGiftAmount(amt.toString())}
-                           className="bg-[#1A1F2E] border border-gray-800 hover:border-purple-500/50 text-white rounded-lg py-2 font-mono text-sm transition-colors"
-                        >
-                           {amt}
-                        </button>
-                     ))}
-                  </div>
-
-                  <button 
-                     onClick={() => {
-                        userRequest('SEND_GIFT', { targetUserId: giftTarget, amount: giftAmount });
-                        setGiftTarget(null);
-                        setGiftAmount('');
-                     }}
-                     disabled={!giftAmount || isNaN(Number(giftAmount)) || Number(giftAmount) <= 0}
-                     className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity mt-4"
-                  >
-                     Send Gift Now
-                  </button>
-               </div>
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-4 text-purple-400 border border-purple-500/30">
+                <Gift className="w-8 h-8" />
+              </div>
+              <h3 className="text-xl font-bold text-white">Send Gift</h3>
+              <p className="text-sm text-gray-400 mt-1">
+                Send VTX coins to @
+                {state?.users?.find((u) => u.id === giftTarget)?.username}
+              </p>
             </div>
-         </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">
+                  Amount (VTX)
+                </label>
+                <input
+                  type="number"
+                  value={giftAmount}
+                  onChange={(e) => setGiftAmount(e.target.value)}
+                  placeholder="e.g. 100"
+                  className="w-full bg-[#0A0D14] border border-gray-800 rounded-xl px-4 py-3 text-white text-lg font-mono focus:outline-none focus:border-purple-500 transition-colors text-center"
+                  autoFocus
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                {[10, 50, 100].map((amt) => (
+                  <button
+                    key={amt}
+                    onClick={() => setGiftAmount(amt.toString())}
+                    className="bg-[#1A1F2E] border border-gray-800 hover:border-purple-500/50 text-white rounded-lg py-2 font-mono text-sm transition-colors"
+                  >
+                    {amt}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => {
+                  userRequest("SEND_GIFT", {
+                    targetUserId: giftTarget,
+                    amount: giftAmount,
+                  });
+                  setGiftTarget(null);
+                  setGiftAmount("");
+                }}
+                disabled={
+                  !giftAmount ||
+                  isNaN(Number(giftAmount)) ||
+                  Number(giftAmount) <= 0
+                }
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity mt-4"
+              >
+                Send Gift Now
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -107,7 +107,8 @@ function getInitialSeedData(table: string): any[] {
         deposit_iban: JSON.stringify({
             paymentConfig: {
                 easypaisa: { iban: 'PK23EP0000003001234567', deepLink: 'https://easypaisa.com.pk', qrUrl: '' },
-                sadapay: { iban: 'PK78SP0000003007654321', deepLink: 'https://sadapay.pk', qrUrl: '' }
+                sadapay: { iban: 'PK78SP0000003007654321', deepLink: 'https://sadapay.pk', qrUrl: '' },
+                jazzcash: { iban: 'PK45JC0000003001122334', deepLink: '', qrUrl: '' }
             },
             platformFeePercent: 10,
             minWithdrawal: 500,

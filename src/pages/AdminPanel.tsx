@@ -796,6 +796,11 @@ export default function AdminPanel() {
                          const formData = new FormData(e.currentTarget);
                          
                          const paymentConfig = {
+                               jazzcash: {
+                                   iban: formData.get('jcIban') as string,
+                                   deepLink: (formData.get('jcLink') as string) || '',
+                                   qrUrl: formData.get('jcQr') as string
+                               },
                               easypaisa: {
                                   iban: formData.get('epIban') as string,
                                   deepLink: formData.get('epLink') as string,
@@ -905,6 +910,42 @@ export default function AdminPanel() {
                                </div>
                            </div>
                        </div>
+                        <div className="col-span-1 md:col-span-2 mb-2 p-4 bg-black/20 rounded-xl border border-gray-800">
+                            <h4 className="text-amber-500 font-bold border-b border-amber-500/20 pb-2 mb-4">JazzCash Configuration</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                   <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Account IBAN</label>
+                                   <input 
+                                      name="jcIban"
+                                      defaultValue={stats.paymentConfig?.jazzcash?.iban || ''}
+                                      type="text" 
+                                      placeholder="PK12JAZZ..."
+                                      className="w-full bg-[#1A1F2E] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-400 transition-colors"
+                                   />
+                                </div>
+                                <div>
+                                   <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Deep Link (Optional)</label>
+                                   <input 
+                                      name="jcLink"
+                                      defaultValue={stats.paymentConfig?.jazzcash?.deepLink || ''}
+                                      type="url" 
+                                      placeholder="jazzcash://"
+                                      className="w-full bg-[#1A1F2E] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-400 transition-colors"
+                                   />
+                                </div>
+                                <div>
+                                   <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">QR Code URL</label>
+                                   <input 
+                                      name="jcQr"
+                                      defaultValue={stats.paymentConfig?.jazzcash?.qrUrl || ''}
+                                      type="url" 
+                                      placeholder="https://..."
+                                      className="w-full bg-[#1A1F2E] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-400 transition-colors"
+                                   />
+                                </div>
+                            </div>
+                        </div>
+
                       <div>
                          <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Platform Fee (%)</label>
                          <input 
