@@ -72,7 +72,7 @@ export default function Players() {
 
     if (isReferrer) {
       badges.push({
-        text: "Referrer (دعوت کنندہ)",
+        text: "Referrer",
         bg: "bg-amber-500/10",
         textCol: "text-amber-400",
         border: "border-amber-500/20",
@@ -80,7 +80,7 @@ export default function Players() {
     }
     if (isReferral) {
       badges.push({
-        text: "Your Referral (آپ کا ریفر)",
+        text: "Your Referral",
         bg: "bg-purple-500/10",
         textCol: "text-purple-400",
         border: "border-purple-500/20",
@@ -88,7 +88,7 @@ export default function Players() {
     }
     if (isOpponent) {
       badges.push({
-        text: "Opponent (میچ پلیئر)",
+        text: "Opponent",
         bg: "bg-emerald-500/10",
         textCol: "text-emerald-400",
         border: "border-emerald-500/20",
@@ -182,21 +182,21 @@ export default function Players() {
           <div className="text-center py-12 px-6 bg-[#131823] border border-gray-800 rounded-3xl">
             <ShieldAlert className="w-12 h-12 mx-auto mb-3 text-gray-500 animate-pulse" />
             <h3 className="text-white font-bold text-base mb-1.5">
-              کوئی پلیئر نہیں ملا (No Players Found)
+              No Players Found
             </h3>
             <p className="text-xs text-gray-400 max-w-xs mx-auto leading-relaxed mb-5">
-              پلیئرز کی لسٹ میں صرف وہ لوگ نظر آئیں گے جن کے ریفرل لنک/کوڈ سے آپ آئے ہیں، یا جن کے ساتھ آپ میچ کھیل چکے ہیں۔
+              Only players who invited you, joined using your referral code, or with whom you have played a match will appear in this list.
             </p>
             <div className="flex flex-col gap-2.5 max-w-xs mx-auto text-left text-xs bg-[#1A1F2E] p-4 rounded-xl border border-gray-800/60">
               <div className="flex items-start gap-2 text-gray-300">
                 <span className="text-emerald-500 mt-0.5">●</span>
                 <span>
-                  میچ کھیلنے کے لیے <strong>ہوم اسکرین</strong> پر کوئی بھی چیلنج کھیلیں یا نیا میچ شروع کریں۔
+                  To play a match, challenge a player from the <strong>Home Screen</strong> or host a new match.
                 </span>
               </div>
               <div className="flex items-start gap-2 text-gray-300">
                 <span className="text-amber-500 mt-0.5">●</span>
-                <span>اپنے دوستوں کو اپنا ریفرل کوڈ بھیج کر جوائن کروائیں!</span>
+                <span>Invite your friends by sharing your Profile ID / Referral code!</span>
               </div>
             </div>
           </div>
